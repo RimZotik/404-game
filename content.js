@@ -5,41 +5,227 @@
 
   // Проверяем, является ли страница ошибкой 404
   function is404Page() {
-    // Проверяем заголовок документа
-    const title = document.title.toLowerCase();
-    if (
-      title.includes("404") ||
-      title.includes("not found") ||
-      title.includes("page not found")
-    ) {
-      return true;
+    console.log("404 Turret Game: Проверяем is404Page...");
+
+    // Не запускаем на популярных сайтах и доменах
+    const hostname = window.location.hostname.toLowerCase();
+    console.log("Hostname:", hostname);
+
+    const excludedDomains = [
+      "google.com",
+      "youtube.com",
+      "facebook.com",
+      "twitter.com",
+      "instagram.com",
+      "linkedin.com",
+      "github.com",
+      "stackoverflow.com",
+      "reddit.com",
+      "wikipedia.org",
+      "amazon.com",
+      "ebay.com",
+      "vk.com",
+      "ok.ru",
+      "mail.ru",
+      "yandex.ru",
+      "bing.com",
+      "yahoo.com",
+      "discord.com",
+      "telegram.org",
+      "whatsapp.com",
+    ];
+
+    for (const domain of excludedDomains) {
+      if (hostname.includes(domain)) {
+        console.log("404 Turret Game: Исключен домен:", domain);
+        return false;
+      }
     }
 
-    // Проверяем содержимое страницы
-    const bodyText = document.body.textContent.toLowerCase();
-    const errorKeywords = [
-      "404",
-      "not found",
+    // Не запускаем на локальных файлах и особых протоколах
+    const protocol = window.location.protocol;
+    console.log("Protocol:", protocol);
+    if (
+      protocol === "file:" ||
+      protocol === "chrome:" ||
+      protocol === "chrome-extension:" ||
+      protocol === "moz-extension:"
+    ) {
+      console.log("404 Turret Game: Исключен протокол:", protocol);
+      return false;
+    }
+
+    // Исключаем страницы с типичными путями не-404, НО только если они НЕ возвращают 404
+    const pathname = window.location.pathname.toLowerCase();
+    console.log("Pathname:", pathname);
+
+    // Сначала проверим HTTP статус
+    let statusIs404 = false;
+    try {
+      const navigationEntries = performance.getEntriesByType("navigation");
+      if (navigationEntries.length > 0) {
+        const navEntry = navigationEntries[0];
+        console.log("Performance API status:", navEntry.responseStatus);
+        if (navEntry.responseStatus === 404) {
+          statusIs404 = true;
+        }
+      }
+    } catch (e) {
+      console.log("Performance API error:", e);
+    }
+
+    // Если статус 404, то не исключаем даже админские пути
+    if (!statusIs404) {
+      const excludedPaths = [
+        "/login",
+        "/register",
+        "/signup",
+        "/auth",
+        "/admin",
+        "/dashboard",
+        "/search",
+        "/api/",
+        "/account",
+        "/profile",
+        "/settings",
+        "/help",
+        "/contact",
+        "/about",
+        "/blog",
+        "/news",
+        "/shop",
+        "/cart",
+        "/checkout",
+      ];
+
+      for (const path of excludedPaths) {
+        if (pathname.includes(path)) {
+          console.log(
+            "404 Turret Game: Исключен путь (но только потому что статус НЕ 404):",
+            path
+          );
+          return false;
+        }
+      }
+    } else {
+      console.log(
+        "404 Turret Game: Статус 404 обнаружен, игнорируем исключения путей"
+      );
+    }
+
+    // Строгая проверка заголовка - должен явно содержать 404
+    const title = document.title.toLowerCase();
+    console.log("Title (lowercase):", title);
+    const titleHas404 =
+      title.includes("404") &&
+      (title.includes("not found") ||
+        title.includes("page not found") ||
+        title.includes("error") ||
+        title.includes("страница не найдена"));
+
+    // Простая проверка - если заголовок точно "404 not found", это почти наверняка 404
+    const simpleTitle404 = title === "404 not found";
+    console.log("Title has 404:", titleHas404);
+    console.log("Simple title 404:", simpleTitle404);
+
+    // Проверяем основные заголовки страницы
+    const h1Elements = document.querySelectorAll(
+      "h1, h2, .error-title, .error-heading"
+    );
+    let headerHas404 = false;
+    h1Elements.forEach((el) => {
+      const text = el.textContent.toLowerCase();
+      console.log("Header text:", text);
+      if (
+        text.includes("404") &&
+        (text.includes("not found") || text.includes("error"))
+      ) {
+        headerHas404 = true;
+      }
+    });
+    console.log("Header has 404:", headerHas404);
+
+    // Проверяем мета-теги
+    const metaDescription = document.querySelector('meta[name="description"]');
+    const metaHas404 =
+      metaDescription &&
+      metaDescription.content.toLowerCase().includes("404") &&
+      metaDescription.content.toLowerCase().includes("not found");
+    console.log("Meta has 404:", metaHas404);
+
+    // Проверяем размер контента - 404 страницы обычно короткие
+    const bodyText = document.body.textContent.trim();
+    const isShortContent = bodyText.length < 2000; // Менее 2000 символов
+    console.log(
+      "Is short content:",
+      isShortContent,
+      "Length:",
+      bodyText.length
+    );
+
+    // Проверяем наличие типичных 404 фраз в небольшом количестве
+    const errorPhrases = [
       "page not found",
       "file not found",
       "страница не найдена",
+      "the requested url",
+      "resource not found",
+      "404 error",
+      "not found", // Добавим простую фразу
     ];
 
-    for (const keyword of errorKeywords) {
-      if (bodyText.includes(keyword)) {
-        return true;
-      }
-    }
+    let phraseCount = 0;
+    const lowerBodyText = bodyText.toLowerCase();
+    console.log(
+      "Body text (first 200 chars):",
+      lowerBodyText.substring(0, 200)
+    );
 
-    // Проверяем HTTP статус (если доступен)
-    if (window.performance && window.performance.navigation) {
-      const entries = performance.getEntriesByType("navigation");
-      if (entries.length > 0 && entries[0].responseStatus === 404) {
-        return true;
+    errorPhrases.forEach((phrase) => {
+      if (lowerBodyText.includes(phrase)) {
+        phraseCount++;
+        console.log("Found phrase:", phrase);
       }
-    }
+    });
+    console.log("Phrase count:", phraseCount);
 
-    return false;
+    // Специальная проверка для nginx 404 страниц
+    const isNginx404 =
+      title.includes("404 not found") &&
+      lowerBodyText.includes("nginx") &&
+      isShortContent;
+    console.log("Is nginx 404:", isNginx404);
+
+    // Окончательное решение: нужно несколько условий одновременно
+    const conditions = [
+      statusIs404,
+      titleHas404,
+      simpleTitle404, // Добавим простую проверку заголовка
+      headerHas404,
+      metaHas404,
+      phraseCount >= 1 && isShortContent, // Понизим требование
+      lowerBodyText.includes("404") && isShortContent,
+      isNginx404, // Добавим специальную проверку nginx
+    ];
+
+    console.log("Conditions:", {
+      statusIs404,
+      titleHas404,
+      simpleTitle404,
+      headerHas404,
+      metaHas404,
+      phraseAndShort: phraseCount >= 1 && isShortContent,
+      "404AndShort": lowerBodyText.includes("404") && isShortContent,
+      isNginx404,
+    });
+
+    const trueConditions = conditions.filter(Boolean).length;
+    console.log("True conditions count:", trueConditions);
+
+    // Упростим условие: если есть HTTP 404 ИЛИ простой заголовок 404 ИЛИ минимум 1 другое условие
+    const result = statusIs404 || simpleTitle404 || trueConditions >= 1;
+    console.log("Final result:", result);
+    return result;
   }
 
   // Заменяем содержимое страницы на игру
@@ -361,20 +547,64 @@
     setTimeout(spawnEnemies, 1000);
   }
 
+  // Функция для безопасной проверки 404
+  function safeCheck404() {
+    console.log("404 Turret Game: Начинаем проверку страницы...");
+    console.log("URL:", window.location.href);
+    console.log("Title:", document.title);
+    console.log("Body text length:", document.body.textContent.trim().length);
+
+    // Дополнительная проверка - не запускаем если страница активно загружается
+    if (document.readyState === "loading") {
+      console.log("404 Turret Game: Страница еще загружается, пропускаем");
+      return false;
+    }
+
+    // Проверяем что у нас есть минимальный контент
+    if (!document.body || document.body.textContent.trim().length < 10) {
+      console.log("404 Turret Game: Слишком мало контента, пропускаем");
+      return false;
+    }
+
+    // Не запускаем на страницах с формами (скорее всего это не 404)
+    const formCount = document.querySelectorAll(
+      'form, input[type="search"], input[type="text"]'
+    ).length;
+    if (formCount > 2) {
+      console.log(
+        "404 Turret Game: Много форм (" + formCount + "), пропускаем"
+      );
+      return false;
+    }
+
+    // Не запускаем на страницах с большим количеством ссылок (скорее всего это не 404)
+    const linkCount = document.querySelectorAll("a[href]").length;
+    if (linkCount > 20) {
+      console.log(
+        "404 Turret Game: Много ссылок (" + linkCount + "), пропускаем"
+      );
+      return false;
+    }
+
+    const result = is404Page();
+    console.log("404 Turret Game: Результат проверки is404Page:", result);
+    return result;
+  }
+
   // Запускаем проверку после загрузки страницы
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => {
-        if (is404Page()) {
-          replaceWithGame();
-        }
-      }, 500); // Небольшая задержка для уверенности
-    });
-  } else {
+  function initCheck() {
+    // Проверяем через большую задержку для уверенности
     setTimeout(() => {
-      if (is404Page()) {
+      if (safeCheck404()) {
+        console.log("404 Turret Game: Обнаружена страница 404, запускаем игру");
         replaceWithGame();
       }
-    }, 500);
+    }, 1500); // Увеличиваем задержку до 1.5 секунд
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initCheck);
+  } else {
+    initCheck();
   }
 })();
