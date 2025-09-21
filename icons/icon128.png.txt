@@ -1,0 +1,2 @@
+# Placeholder для icon128.png
+PLACEHOLDER_FILE=true

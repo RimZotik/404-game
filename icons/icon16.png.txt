@@ -1,0 +1,4 @@
+# Placeholder для icon16.png
+# Для работы расширения используйте generate_icons.html для создания настоящих PNG иконок
+# или конвертируйте icon16.svg в PNG с помощью любого онлайн-конвертера
+PLACEHOLDER_FILE=true

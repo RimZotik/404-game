@@ -1,0 +1,2 @@
+# Placeholder для icon48.png
+PLACEHOLDER_FILE=true
