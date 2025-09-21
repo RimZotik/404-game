@@ -241,7 +241,6 @@
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>404 - Turret Defense Game</title>
-                <style id="game-styles"></style>
             </head>
             <body>
                 <div id="game-container">
@@ -267,41 +266,58 @@
 
     // Загружаем CSS и JS для игры
     loadGameAssets();
+
+    // Запускаем fallback через 3 секунды если основная игра не загрузилась
+    setTimeout(() => {
+      if (!window.turretGame && !document.querySelector(".enemy")) {
+        console.log(
+          "404 Turret Game: Основная игра не загрузилась, принудительно запускаем fallback"
+        );
+        loadFallbackGameLogic();
+      }
+    }, 3000);
   }
 
   // Загружаем ресурсы игры
   function loadGameAssets() {
-    // Получаем URL расширения
-    const extensionUrl = chrome.runtime.getURL("");
-
     // Загружаем CSS
-    fetch(chrome.runtime.getURL("game.css"))
-      .then((response) => response.text())
-      .then((css) => {
-        const styleElement = document.getElementById("game-styles");
-        if (styleElement) {
-          styleElement.textContent = css;
-        }
-      })
-      .catch((error) => {
-        console.log("CSS загружен встроенными стилями");
-        // Встроенные стили как fallback
-        loadFallbackStyles();
-      });
+    const linkElement = document.createElement("link");
+    linkElement.rel = "stylesheet";
+    linkElement.href = chrome.runtime.getURL("game.css");
+    linkElement.onload = () => {
+      console.log("404 Turret Game: game.css загружен успешно");
+    };
+    linkElement.onerror = () => {
+      console.log(
+        "404 Turret Game: Ошибка загрузки game.css, используем fallback"
+      );
+      loadFallbackStyles();
+    };
+    document.head.appendChild(linkElement);
 
     // Загружаем и выполняем JavaScript
-    fetch(chrome.runtime.getURL("game.js"))
-      .then((response) => response.text())
-      .then((js) => {
-        const script = document.createElement("script");
-        script.textContent = js;
-        document.body.appendChild(script);
-      })
-      .catch((error) => {
-        console.log("JS загружен встроенной логикой");
-        // Встроенная логика как fallback
-        loadFallbackGameLogic();
-      });
+    console.log("404 Turret Game: Пытаемся загрузить game.js");
+    const script = document.createElement("script");
+    script.src = chrome.runtime.getURL("game.js");
+    script.onload = () => {
+      console.log("404 Turret Game: game.js загружен успешно");
+      // Проверяем, инициализировалась ли игра
+      setTimeout(() => {
+        if (!window.turretGame) {
+          console.log(
+            "404 Turret Game: Игра не инициализировалась, запускаем fallback"
+          );
+          loadFallbackGameLogic();
+        }
+      }, 1000);
+    };
+    script.onerror = () => {
+      console.log(
+        "404 Turret Game: Ошибка загрузки game.js, используем fallback"
+      );
+      loadFallbackGameLogic();
+    };
+    document.body.appendChild(script);
   }
 
   // Fallback стили
@@ -412,6 +428,53 @@
                 margin-bottom: 5px;
                 opacity: 0.9;
             }
+
+            @keyframes hitExplosion {
+                0% {
+                    transform: scale(0) rotate(0deg);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.2) rotate(180deg);
+                    opacity: 0.8;
+                }
+                100% {
+                    transform: scale(0) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+
+            @keyframes sparkFly {
+                0% {
+                    transform: scale(1) translateX(0) translateY(0);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(0) translateX(20px) translateY(20px);
+                    opacity: 0;
+                }
+            }
+
+            @keyframes deathExplosion {
+                0% {
+                    transform: scale(0) rotate(0deg);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.5) rotate(180deg);
+                    opacity: 0.9;
+                }
+                100% {
+                    transform: scale(3) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+
+            @keyframes scoreUpdate {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
         `;
 
     const styleElement = document.getElementById("game-styles");
@@ -422,6 +485,8 @@
 
   // Fallback игровая логика
   function loadFallbackGameLogic() {
+    console.log("404 Turret Game: Загружаем fallback логику");
+
     let score = 0;
     let enemies = [];
     let gameRunning = true;
@@ -431,8 +496,22 @@
     const gameArea = document.getElementById("game-area");
     const enemiesContainer = document.getElementById("enemies-container");
 
+    if (!turret || !scoreElement || !gameArea || !enemiesContainer) {
+      console.error("404 Turret Game: Не найдены необходимые элементы:", {
+        turret: !!turret,
+        scoreElement: !!scoreElement,
+        gameArea: !!gameArea,
+        enemiesContainer: !!enemiesContainer,
+      });
+      return;
+    }
+
+    console.log("404 Turret Game: Все элементы найдены, инициализируем игру");
+
     // Отслеживание мыши для турели
     document.addEventListener("mousemove", (e) => {
+      if (!gameArea || !turret) return;
+
       const rect = gameArea.getBoundingClientRect();
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
@@ -473,16 +552,45 @@
       }
 
       // Обработчик клика
-      enemy.addEventListener("click", () => {
+      enemy.addEventListener("click", (e) => {
         const hits = parseInt(enemy.dataset.hits) + 1;
         enemy.dataset.hits = hits;
 
-        if (hits === 1 || hits === 2) {
+        // Создаем эффект попадания
+        createHitEffect(e.clientX, e.clientY);
+
+        // Визуальная обратная связь
+        enemy.style.transform = "scale(1.2)";
+        setTimeout(() => {
+          if (enemy.parentNode) {
+            enemy.style.transform = "scale(1)";
+          }
+        }, 150);
+
+        if (hits === 1) {
           enemy.classList.add("hit");
+          enemy.style.background = "radial-gradient(circle, #ffeb3b, #ffc107)";
+          enemy.style.borderColor = "#ff9800";
+        } else if (hits === 2) {
+          enemy.style.background = "radial-gradient(circle, #ff9800, #f57c00)";
+          enemy.style.borderColor = "#ef6c00";
+          enemy.style.boxShadow = "0 0 20px rgba(255, 152, 0, 0.9)";
         } else if (hits >= 3) {
           enemy.classList.add("dead");
+
+          // Эффект взрыва при уничтожении
+          createDeathEffect(enemy);
+
           score++;
           scoreElement.textContent = score;
+
+          // Анимация счетчика
+          scoreElement.style.transform = "scale(1.3)";
+          scoreElement.style.color = "#00ff00";
+          setTimeout(() => {
+            scoreElement.style.transform = "scale(1)";
+            scoreElement.style.color = "#ffd700";
+          }, 200);
 
           setTimeout(() => {
             if (enemy.parentNode) {
@@ -533,6 +641,113 @@
           }
         }
       }, duration);
+    }
+
+    // Функция создания эффекта попадания
+    function createHitEffect(x, y) {
+      // Основной эффект
+      const effect = document.createElement("div");
+      effect.style.position = "fixed";
+      effect.style.left = x - 15 + "px";
+      effect.style.top = y - 15 + "px";
+      effect.style.width = "30px";
+      effect.style.height = "30px";
+      effect.style.background =
+        "radial-gradient(circle, #ffeb3b, #ffc107, transparent)";
+      effect.style.borderRadius = "50%";
+      effect.style.pointerEvents = "none";
+      effect.style.zIndex = "10000";
+      effect.style.animation = "hitExplosion 0.3s ease-out";
+
+      document.body.appendChild(effect);
+
+      // Искры
+      for (let i = 0; i < 4; i++) {
+        const spark = document.createElement("div");
+        spark.style.position = "fixed";
+        spark.style.left = x + (Math.random() - 0.5) * 20 + "px";
+        spark.style.top = y + (Math.random() - 0.5) * 20 + "px";
+        spark.style.width = "6px";
+        spark.style.height = "6px";
+        spark.style.background = "radial-gradient(circle, #ff5722, #ff9800)";
+        spark.style.borderRadius = "50%";
+        spark.style.pointerEvents = "none";
+        spark.style.zIndex = "9999";
+        spark.style.animation = "sparkFly 0.4s ease-out";
+
+        document.body.appendChild(spark);
+
+        setTimeout(() => {
+          if (spark.parentNode) {
+            spark.parentNode.removeChild(spark);
+          }
+        }, 400);
+      }
+
+      setTimeout(() => {
+        if (effect.parentNode) {
+          effect.parentNode.removeChild(effect);
+        }
+      }, 300);
+    }
+
+    // Функция создания эффекта взрыва при уничтожении
+    function createDeathEffect(enemyElement) {
+      const rect = enemyElement.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      // Основной взрыв
+      const explosion = document.createElement("div");
+      explosion.style.position = "fixed";
+      explosion.style.left = centerX - 25 + "px";
+      explosion.style.top = centerY - 25 + "px";
+      explosion.style.width = "50px";
+      explosion.style.height = "50px";
+      explosion.style.background =
+        "radial-gradient(circle, #f44336, #ff9800, transparent)";
+      explosion.style.borderRadius = "50%";
+      explosion.style.pointerEvents = "none";
+      explosion.style.zIndex = "10000";
+      explosion.style.animation = "deathExplosion 0.5s ease-out";
+
+      document.body.appendChild(explosion);
+
+      // Частицы взрыва
+      for (let i = 0; i < 8; i++) {
+        const particle = document.createElement("div");
+        const angle = (i / 8) * 2 * Math.PI;
+        const distance = 30 + Math.random() * 20;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+
+        particle.style.position = "fixed";
+        particle.style.left = centerX + "px";
+        particle.style.top = centerY + "px";
+        particle.style.width = "8px";
+        particle.style.height = "8px";
+        particle.style.background = "#f44336";
+        particle.style.borderRadius = "50%";
+        particle.style.pointerEvents = "none";
+        particle.style.zIndex = "9999";
+        particle.style.transition = "all 0.6s ease-out";
+        particle.style.transform = `translate(${dx}px, ${dy}px) scale(0)`;
+        particle.style.opacity = "0";
+
+        document.body.appendChild(particle);
+
+        setTimeout(() => {
+          if (particle.parentNode) {
+            particle.parentNode.removeChild(particle);
+          }
+        }, 600);
+      }
+
+      setTimeout(() => {
+        if (explosion.parentNode) {
+          explosion.parentNode.removeChild(explosion);
+        }
+      }, 500);
     }
 
     // Спавн врагов

@@ -38,6 +38,8 @@ body {
 
 #score {
   color: #ffd700;
+  transition: all 0.2s ease;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* Игровая область */
@@ -67,28 +69,32 @@ body {
 #turret::before {
   content: "";
   position: absolute;
-  width: 50px;
-  height: 12px;
-  background: linear-gradient(90deg, #ff3742, #ff6b6b);
+  width: 55px;
+  height: 14px;
+  background: linear-gradient(90deg, #ff3742, #ff6b6b, #ff8a80);
   top: 50%;
   left: 50%;
   transform-origin: left center;
   transform: translate(0, -50%);
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(255, 55, 66, 0.6);
+  border-radius: 7px;
+  box-shadow: 0 0 15px rgba(255, 55, 66, 0.8),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  border: 1px solid #d32f2f;
 }
 
 #turret::after {
   content: "";
   position: absolute;
-  width: 20px;
-  height: 20px;
-  background: #2c2c2c;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle, #2c2c2c, #1a1a1a);
   border-radius: 50%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  border: 2px solid #1a1a1a;
+  border: 2px solid #0f0f0f;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8), 0 0 5px rgba(0, 0, 0, 0.5);
+  z-index: 10;
 }
 
 /* Враги */
@@ -194,21 +200,47 @@ body {
 .hit-effect {
   position: absolute;
   pointer-events: none;
-  width: 20px;
-  height: 20px;
-  background: radial-gradient(circle, #ffeb3b, #ffc107);
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, #ffeb3b, #ffc107, transparent);
   border-radius: 50%;
   z-index: 200;
   animation: hitExplosion 0.3s ease-out;
 }
 
+.hit-spark {
+  position: absolute;
+  pointer-events: none;
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, #ff5722, #ff9800);
+  border-radius: 50%;
+  z-index: 190;
+  animation: sparkFly 0.4s ease-out;
+}
+
 @keyframes hitExplosion {
   0% {
-    transform: scale(0);
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5) rotate(180deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkFly {
+  0% {
+    transform: scale(1) translate(0, 0);
     opacity: 1;
   }
   100% {
-    transform: scale(3);
+    transform: scale(0.3) translate(var(--random-x, 0), var(--random-y, 0));
     opacity: 0;
   }
 }
@@ -236,22 +268,54 @@ body {
   }
 }
 
-/* Анимация появления врагов */
+/* Эффект прорыва к центру */
+.breach-effect {
+  position: absolute;
+  pointer-events: none;
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 0, 0, 0.8),
+    rgba(255, 100, 100, 0.4),
+    transparent
+  );
+  border-radius: 50%;
+  z-index: 180;
+  animation: breachPulse 1s ease-out;
+}
+
+@keyframes breachPulse {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* Улучшенная анимация появления врагов */
 .enemy-spawn {
   animation: spawnIn 0.5s ease-out;
 }
 
 @keyframes spawnIn {
   0% {
-    transform: scale(0);
+    transform: scale(0) rotate(0deg);
     opacity: 0;
   }
   50% {
-    transform: scale(1.3);
+    transform: scale(1.3) rotate(180deg);
     opacity: 0.7;
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(360deg);
     opacity: 1;
   }
 }

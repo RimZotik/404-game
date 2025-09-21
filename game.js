@@ -92,10 +92,29 @@ class TurretGame {
     enemy.style.left = position.x + "px";
     enemy.style.top = position.y + "px";
 
+    // Случайный размер и скорость для разнообразия
+    const sizeVariation = 0.8 + Math.random() * 0.4; // от 0.8 до 1.2
+    const speedVariation = 0.7 + Math.random() * 0.6; // от 0.7 до 1.3
+
+    enemy.style.transform = `scale(${sizeVariation})`;
+    enemy.dataset.speed = speedVariation.toString();
+
     // Добавляем обработчик клика
     enemy.addEventListener("click", (e) => this.hitEnemy(e, enemy));
 
+    // Эффект появления
+    enemy.style.opacity = "0";
+    enemy.style.transform += " scale(0)";
+
     this.enemiesContainer.appendChild(enemy);
+
+    // Анимация появления
+    setTimeout(() => {
+      enemy.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      enemy.style.opacity = "1";
+      enemy.style.transform = `scale(${sizeVariation})`;
+    }, 50);
+
     this.enemies.push({
       element: enemy,
       startX: position.x,
@@ -104,10 +123,13 @@ class TurretGame {
       targetY: this.gameArea.offsetHeight / 2,
       startTime: Date.now(),
       hits: 0,
+      speed: speedVariation,
     });
 
-    // Анимация движения к центру
-    this.moveEnemyToCenter(enemy);
+    // Анимация движения к центру с задержкой для эффекта появления
+    setTimeout(() => {
+      this.moveEnemyToCenter(enemy);
+    }, 300);
   }
 
   getRandomSpawnPosition() {
@@ -153,8 +175,13 @@ class TurretGame {
     const deltaY = centerY - startY;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
+    // Получаем индивидуальную скорость врага
+    const enemyData = this.enemies.find((e) => e.element === enemyElement);
+    const speedMultiplier = enemyData ? enemyData.speed : 1;
+
     // Вычисляем время движения на основе скорости
-    const duration = (distance / this.enemySpeed) * 1000;
+    const baseSpeed = this.enemySpeed * speedMultiplier;
+    const duration = (distance / baseSpeed) * 1000;
 
     enemyElement.style.transition = `left ${duration}ms linear, top ${duration}ms linear`;
     enemyElement.style.left = centerX + "px";
@@ -163,9 +190,29 @@ class TurretGame {
     // Удаляем врага, если он достиг центра
     setTimeout(() => {
       if (enemyElement.parentNode && !enemyElement.classList.contains("dead")) {
+        // Создаем эффект "прорыва" к центру
+        this.createBreachEffect(centerX, centerY);
         this.removeEnemy(enemyElement);
       }
     }, duration);
+  }
+
+  // Новый метод для эффекта прорыва
+  createBreachEffect(x, y) {
+    const breach = document.createElement("div");
+    breach.className = "breach-effect";
+    breach.style.left = x - 25 + "px";
+    breach.style.top = y - 25 + "px";
+    breach.style.position = "absolute";
+    breach.style.pointerEvents = "none";
+
+    this.gameArea.appendChild(breach);
+
+    setTimeout(() => {
+      if (breach.parentNode) {
+        breach.parentNode.removeChild(breach);
+      }
+    }, 1000);
   }
 
   hitEnemy(event, enemyElement) {
@@ -180,21 +227,59 @@ class TurretGame {
     // Создаем эффект попадания
     this.createHitEffect(event.clientX, event.clientY);
 
-    if (enemyData.hits === 1 || enemyData.hits === 2) {
+    // Добавляем звуковой эффект (визуальная обратная связь)
+    enemyElement.style.transform = "scale(1.2)";
+    setTimeout(() => {
+      if (enemyElement.parentNode) {
+        enemyElement.style.transform = "scale(1)";
+      }
+    }, 150);
+
+    if (enemyData.hits === 1) {
       enemyElement.classList.add("hit");
+      // Первое попадание - желтый эффект
+      enemyElement.style.background =
+        "radial-gradient(circle, #ffeb3b, #ffc107)";
+      enemyElement.style.borderColor = "#ff9800";
+    } else if (enemyData.hits === 2) {
+      // Второе попадание - оранжевый эффект
+      enemyElement.style.background =
+        "radial-gradient(circle, #ff9800, #f57c00)";
+      enemyElement.style.borderColor = "#ef6c00";
+      enemyElement.style.boxShadow = "0 0 20px rgba(255, 152, 0, 0.9)";
     } else if (enemyData.hits >= 3) {
       this.destroyEnemy(enemyElement);
     }
   }
 
   createHitEffect(x, y) {
+    // Создаем основной эффект попадания
     const effect = document.createElement("div");
     effect.className = "hit-effect";
-    effect.style.left = x - 10 + "px";
-    effect.style.top = y - 10 + "px";
+    effect.style.left = x - 15 + "px";
+    effect.style.top = y - 15 + "px";
     effect.style.position = "fixed";
+    effect.style.pointerEvents = "none";
 
     document.body.appendChild(effect);
+
+    // Создаем дополнительные искры
+    for (let i = 0; i < 4; i++) {
+      const spark = document.createElement("div");
+      spark.className = "hit-spark";
+      spark.style.left = x + (Math.random() - 0.5) * 20 + "px";
+      spark.style.top = y + (Math.random() - 0.5) * 20 + "px";
+      spark.style.position = "fixed";
+      spark.style.pointerEvents = "none";
+
+      document.body.appendChild(spark);
+
+      setTimeout(() => {
+        if (spark.parentNode) {
+          spark.parentNode.removeChild(spark);
+        }
+      }, 400);
+    }
 
     setTimeout(() => {
       if (effect.parentNode) {
@@ -206,7 +291,16 @@ class TurretGame {
   destroyEnemy(enemyElement) {
     enemyElement.classList.add("dead");
     this.score++;
+
+    // Анимация изменения счетчика
     this.scoreElement.textContent = this.score;
+    this.scoreElement.style.transform = "scale(1.3)";
+    this.scoreElement.style.color = "#00ff00";
+
+    setTimeout(() => {
+      this.scoreElement.style.transform = "scale(1)";
+      this.scoreElement.style.color = "#ffd700";
+    }, 200);
 
     // Создаем эффект взрыва
     this.createDeathEffect(enemyElement);
