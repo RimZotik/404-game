@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "404 Turret Game",
+  "version": "1.0.0",
+  "description": "Заменяет страницы ошибки 404 на мини-игру с турелью",
+  "permissions": ["activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["game.html", "game.css", "game.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.svg",
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "404 Turret Game"
+  }
+}

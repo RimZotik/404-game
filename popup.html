@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 Turret Game</title>
+    <style>
+      body {
+        width: 300px;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 18px;
+        margin-bottom: 10px;
+        text-align: center;
+        color: #ffd700;
+      }
+
+      p {
+        font-size: 14px;
+        line-height: 1.4;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .features {
+        list-style: none;
+        padding: 0;
+        margin: 15px 0;
+      }
+
+      .features li {
+        font-size: 12px;
+        margin-bottom: 8px;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .features li:before {
+        content: "🎯";
+        position: absolute;
+        left: 0;
+      }
+
+      .test-button {
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        width: 100%;
+        margin-top: 10px;
+        transition: background 0.3s;
+      }
+
+      .test-button:hover {
+        background: #ff5252;
+      }
+
+      .version {
+        text-align: center;
+        font-size: 10px;
+        color: #ccc;
+        margin-top: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>404 Turret Game</h1>
+    <p>Расширение активно! Заменяет только настоящие страницы 404 на игру.</p>
+
+    <ul class="features">
+      <li>Автоматическое обнаружение 404</li>
+      <li>Турель следует за мышью</li>
+      <li>3 клика для уничтожения врага</li>
+      <li>Счетчик убитых врагов</li>
+      <li>Защита от ложных срабатываний</li>
+    </ul>
+
+    <button class="test-button" onclick="testGame()">
+      Протестировать игру
+    </button>
+
+    <div class="version">v1.0.0</div>
+
+    <script>
+      function testGame() {
+        // Открываем новую вкладку с тестовой 404 страницей
+        chrome.tabs.create({
+          url: "https://httpstat.us/404",
+        });
+      }
+    </script>
+  </body>
+</html>
